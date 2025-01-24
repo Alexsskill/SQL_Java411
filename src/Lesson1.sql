@@ -8,7 +8,7 @@ CREATE TABLE Customer(
                          "CustomerID" BIGINT,
                          "FirstName" VARCHAR(50),
                          "LastName" VARCHAR(50),
-                         Email VARCHAR(100)
+                         Email VARCHAR(90)
 );
 
 CREATE TABLE Order(
