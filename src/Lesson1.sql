@@ -40,4 +40,4 @@ SELECT * FROM Customer;
 
 SELECT * FROM Customer
 WHERE city = 'Санкт-Петербург'
-ORDER BY lastName;
+ORDER BY lastName ASC;
