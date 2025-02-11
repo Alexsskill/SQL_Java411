@@ -103,3 +103,72 @@ FROM Authors a
          LEFT JOIN BookAuthors ba ON a.AuthorID = ba.AuthorID
 GROUP BY a.AuthorID, a.FirstName, a.LastName
 HAVING COUNT(ba.BookID) = 0;
+
+-- Для таблицы Books (внешний ключ PublisherID)
+ALTER TABLE Books
+    DROP CONSTRAINT IF EXISTS fk_publisher_id,
+    ADD CONSTRAINT fk_publisher_id
+        FOREIGN KEY (PublisherID) REFERENCES Publishers(PublisherID)
+            ON DELETE SET NULL;
+
+-- Для таблицы BookAuthors (внешний ключ BookID)
+ALTER TABLE BookAuthors
+    DROP CONSTRAINT IF EXISTS fk_book_id,
+    ADD CONSTRAINT fk_book_id
+        FOREIGN KEY (BookID) REFERENCES Books(BookID)
+            ON DELETE CASCADE;
+
+-- Для таблицы BookAuthors (внешний ключ AuthorID)
+ALTER TABLE BookAuthors
+    DROP CONSTRAINT IF EXISTS fk_author_id,
+    ADD CONSTRAINT fk_author_id
+        FOREIGN KEY (AuthorID) REFERENCES Authors(AuthorID)
+            ON DELETE RESTRICT;
+
+ALTER TABLE Publishers
+    ALTER COLUMN Name SET NOT NULL,
+    ADD CONSTRAINT unique_publisher_name UNIQUE (Name);
+
+ALTER TABLE Books
+    ALTER COLUMN Title SET NOT NULL,
+    ADD CONSTRAINT check_publication_year CHECK (PublicationYear > 0),
+    ADD CONSTRAINT check_price CHECK (Price > 0),
+    ALTER COLUMN Price SET DEFAULT 0;
+
+ALTER TABLE Authors
+    ALTER COLUMN FirstName SET NOT NULL,
+    ALTER COLUMN LastName SET NOT NULL;
+
+-- Удаление издательства "Эксмо". Проверка ON DELETE SET NULL
+DELETE FROM Publishers WHERE PublisherID = 1;
+-- Результат: В таблице Books поле PublisherID для книг, изданных "Эксмо", станет NULL.
+
+-- Удаление книги "Война и мир". Проверка ON DELETE CASCADE
+DELETE FROM Books WHERE BookID = 1;
+-- Результат: Запись в таблице BookAuthors, связанная с этой книгой, также будет удалена.
+
+-- Попытка удаления автора Льва Толстого. Проверка ON DELETE RESTRICT
+DELETE FROM Authors WHERE AuthorID = 1;
+-- Результат: Ошибка, так как автор связан с книгой.
+
+-- Попытка добавить книгу с отрицательной ценой. Проверка CHECK
+INSERT INTO Books (Title, PublicationYear, PublisherID, Price)
+VALUES ('Новая книга', 2023, 2, -100);
+-- Результат: Ошибка, так как цена должна быть больше 0.
+
+CREATE TABLE Hierarchy (
+                           ID SERIAL PRIMARY KEY,          -- Уникальный идентификатор записи
+                           Name VARCHAR(100) NOT NULL,     -- Название категории или имя сотрудника
+                           ParentID INT,                   -- Ссылка на родительскую запись
+                           FOREIGN KEY (ParentID) REFERENCES Hierarchy(ID) ON DELETE CASCADE -- Внешний ключ для связи с самой собой
+);
+
+INSERT INTO Hierarchy (Name, ParentID) VALUES
+                                           ('Генеральный директор', NULL),        -- Верхний уровень
+                                           ('Заместитель гендиректора', 1),       -- Подчиненный генеральному директору
+                                           ('Отдел разработки', 2),               -- Подразделение под заместителем
+                                           ('Тимлид', 3),                         -- Руководитель команды
+                                           ('Программист', 4),                    -- Член команды
+                                           ('Отдел маркетинга', 2),               -- Подразделение под заместителем
+                                           ('Маркетолог', 6);                     -- Член отдела маркетинга
+
