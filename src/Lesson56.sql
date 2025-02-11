@@ -60,3 +60,46 @@ FROM
     Books b
         JOIN
     Publishers p ON b.PublisherID = p.PublisherID;
+
+ALTER TABLE Books ADD COLUMN Price DECIMAL(10, 2);
+
+-- Заполняем поле price для существующих книг
+UPDATE Books SET Price = 500 WHERE BookID = 1;
+UPDATE Books SET Price = 450 WHERE BookID = 2;
+UPDATE Books SET Price = 300 WHERE BookID = 3;
+UPDATE Books SET Price = 600 WHERE BookID = 4;
+
+SELECT
+    AVG(Price) AS AveragePrice,
+    MIN(Price) AS MinPrice,
+    MAX(Price) AS MaxPrice
+FROM Books;
+
+SELECT
+    a.FirstName || ' ' || a.LastName AS AuthorName,
+    COUNT(*) AS BookCount
+FROM Authors a
+         JOIN BookAuthors ba ON a.AuthorID = ba.AuthorID
+GROUP BY a.AuthorID, a.FirstName, a.LastName;
+
+SELECT
+    a.FirstName || ' ' || a.LastName AS AuthorName,
+    COUNT(*) AS BookCount,
+    AVG(b.Price) AS AveragePrice
+FROM Authors a
+         JOIN BookAuthors ba ON a.AuthorID = ba.AuthorID
+         JOIN Books b ON ba.BookID = b.BookID
+GROUP BY a.AuthorID, a.FirstName, a.LastName;
+
+SELECT
+    a.FirstName || ' ' || a.LastName AS AuthorName
+FROM Authors a
+         LEFT JOIN BookAuthors ba ON a.AuthorID = ba.AuthorID
+WHERE ba.BookID IS NULL;
+
+SELECT
+    a.FirstName || ' ' || a.LastName AS AuthorName
+FROM Authors a
+         LEFT JOIN BookAuthors ba ON a.AuthorID = ba.AuthorID
+GROUP BY a.AuthorID, a.FirstName, a.LastName
+HAVING COUNT(ba.BookID) = 0;
