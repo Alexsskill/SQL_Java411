@@ -157,18 +157,84 @@ VALUES ('Новая книга', 2023, 2, -100);
 -- Результат: Ошибка, так как цена должна быть больше 0.
 
 CREATE TABLE Hierarchy (
-                           ID SERIAL PRIMARY KEY,          -- Уникальный идентификатор записи
-                           Name VARCHAR(100) NOT NULL,     -- Название категории или имя сотрудника
-                           ParentID INT,                   -- Ссылка на родительскую запись
-                           FOREIGN KEY (ParentID) REFERENCES Hierarchy(ID) ON DELETE CASCADE -- Внешний ключ для связи с самой собой
+        ID SERIAL PRIMARY KEY,          -- Уникальный идентификатор записи
+        Name VARCHAR(100) NOT NULL,     -- Название категории или имя сотрудника
+        ParentID INT,                   -- Ссылка на родительскую запись
+        FOREIGN KEY (ParentID) REFERENCES Hierarchy(ID) ON DELETE CASCADE -- Внешний ключ для связи с самой собой
 );
 
 INSERT INTO Hierarchy (Name, ParentID) VALUES
-                                           ('Генеральный директор', NULL),        -- Верхний уровень
-                                           ('Заместитель гендиректора', 1),       -- Подчиненный генеральному директору
-                                           ('Отдел разработки', 2),               -- Подразделение под заместителем
-                                           ('Тимлид', 3),                         -- Руководитель команды
-                                           ('Программист', 4),                    -- Член команды
-                                           ('Отдел маркетинга', 2),               -- Подразделение под заместителем
-                                           ('Маркетолог', 6);                     -- Член отдела маркетинга
+        ('Генеральный директор', NULL),        -- Верхний уровень
+        ('Заместитель гендиректора', 1),       -- Подчиненный генеральному директору
+        ('Отдел разработки', 2),               -- Подразделение под заместителем
+        ('Тимлид', 3),                         -- Руководитель команды
+        ('Программист', 4),                    -- Член команды
+        ('Отдел маркетинга', 2),               -- Подразделение под заместителем
+        ('Маркетолог', 6);                     -- Член отдела маркетинга
+
+
+ALTER TABLE Books ADD COLUMN PageCount INT;
+
+UPDATE Books SET PageCount = 1225 WHERE BookID = 1;
+UPDATE Books SET PageCount = 672 WHERE BookID = 2;
+UPDATE Books SET PageCount = 320 WHERE BookID = 3;
+UPDATE Books SET PageCount = 480 WHERE BookID = 4;
+
+SELECT Title, PageCount
+FROM Books
+WHERE PageCount > (SELECT AVG(PageCount) FROM Books);
+
+ALTER TABLE Books ADD COLUMN Price DECIMAL(10, 2);
+ALTER TABLE Books ADD COLUMN StockQuantity INT;
+ALTER TABLE Books ADD COLUMN PublicationYear INT;
+UPDATE Books SET Price = 500, StockQuantity = 10, PublicationYear = 2020 WHERE BookID = 1;
+UPDATE Books SET Price = 450, StockQuantity = 15, PublicationYear = 2019 WHERE BookID = 2;
+UPDATE Books SET Price = 300, StockQuantity = 20, PublicationYear = 2021 WHERE BookID = 3;
+UPDATE Books SET Price = 600, StockQuantity = 5, PublicationYear = 2022 WHERE BookID = 4;
+
+SELECT Title, PublicationYear
+FROM Books
+WHERE PublicationYear = (SELECT MAX(PublicationYear) FROM Books);
+
+-- С помощью подзапроса
+SELECT *
+FROM (
+         SELECT Title, SUM(Price * StockQuantity) AS TotalValue
+         FROM Books
+         GROUP BY Title
+     ) AS BookValues
+WHERE TotalValue > 30000
+ORDER BY TotalValue;
+
+-- С помощью HAVING
+SELECT Title, SUM(Price * StockQuantity) AS TotalValue
+FROM Books
+GROUP BY Title
+HAVING SUM(Price * StockQuantity) > 30000
+ORDER BY TotalValue;
+
+-- С помощью CTE
+WITH BookValues AS (
+    SELECT Title, SUM(Price * StockQuantity) AS TotalValue
+    FROM Books
+    GROUP BY Title
+)
+SELECT *
+FROM BookValues
+WHERE TotalValue > 30000
+ORDER BY TotalValue;
+
+SELECT
+    Title,
+    PublicationYear,
+    CONCAT(a.FirstName, ' ', a.LastName) AS AuthorName,
+    CASE
+        WHEN EXTRACT(YEAR FROM CURRENT_DATE) - PublicationYear <= 1 THEN 'Новая'
+        WHEN EXTRACT(YEAR FROM CURRENT_DATE) - PublicationYear <= 3 THEN 'Средняя'
+        ELSE 'Старая'
+        END AS Freshness
+FROM Books b
+         JOIN BookAuthors ba ON b.BookID = ba.BookID
+         JOIN Authors a ON ba.AuthorID = a.AuthorID
+ORDER BY PublicationYear DESC;
 
